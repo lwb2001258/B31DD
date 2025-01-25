@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Light</title>
+    <style>
+
+        .traffic-light {
+            width: 100px;
+            padding: 20px;
+            background-color: black;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around;
+            height: 250px;
+        }
+
+        .container {
+            display: flex;
+        }
+
+
+        .light {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: gray;
+        }
+
+
+        .red.active {
+            background-color: red;
+        }
+
+        .yellow.active {
+            background-color: yellow;
+        }
+
+        .green.active {
+            background-color: green;
+        }
+
+        .lcd-display {
+            display: inline-block;
+            font-size: 80px;
+            font-weight: bold;
+            width: 150px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            background-color: #111;
+            border-radius: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .textDisplay {
+            font-size: 30px;
+        }
+
+        .red {
+            color: red;
+        }
+
+        .yellow {
+            color: yellow;
+        }
+
+        .green {
+            color: limegreen;
+        }
+    </style>
+</head>
+<body>
+
+<h1 style="text-align: center;">Traffic Light DashBoard</h1>
+<h1></h1>
+<h3>Traffic Light Status</h3>
+<div class="container">
+    <div class="traffic-light box1">
+        <div class="light green" id="greenLight"></div>
+        <div class="light yellow" id="yellowLight"></div>
+        <div class="light red" id="redLight"></div>
+
+    </div>
+
+    <div class="lcd-display box2 " id="countdownDisplay"></div>
+</div>
+<h1></h1>
+<h1></h1>
+<h1></h1>
+<h3>Real-Time Energy Consumption:</h3>
+<h3 id="energy">" mW"</h3>
+<h1></h1>
+<h1></h1>
+<h1></h1>
+
+
+<script>
+
+
+    function changeLight() {
+
+        document.getElementById('redLight').classList.remove('active');
+        document.getElementById('yellowLight').classList.remove('active');
+        document.getElementById('greenLight').classList.remove('active');
+
+        const displayElement = document.getElementById('countdownDisplay');
+        const energyElement = document.getElementById('energy');
+        setInterval(() => {
+            fetch("http://127.0.0.1:8000/get_traffic_light_status/")
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Network response was not ok");
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    let total_energy = data.total_energy;
+                    energyElement.textContent = total_energy.toFixed(2) + " mW";
+                    let counts = data.time;
+                    if (counts == "EMERGENCY") {
+                        console.log(data)
+                        document.getElementById('greenLight').classList.add('active');
+                        document.getElementById('countdownDisplay').textContent = counts;
+                        displayElement.className = 'lcd-display yellow inline-block';
+                        displayElement.style.width = "700px";
+                        return
+                    }
+                    displayElement.style.width = "150px";
+                    if (data.color == "RED") {
+                        document.getElementById('redLight').classList.add('active');
+
+                        if (counts <= 30 && counts > 0) {
+                            displayElement.className = 'lcd-display red';
+                            document.getElementById('countdownDisplay').textContent = counts;
+
+                        } else {
+                            document.getElementById('countdownDisplay').textContent = "";
+                            displayElement.className = 'lcd-display';
+
+                        }
+
+
+                    } else if (data.color == "YELLOW") {
+                        document.getElementById('yellowLight').classList.add('active');
+                        if (counts != 0) {
+
+                            displayElement.className = 'lcd-display yellow';
+                            document.getElementById('countdownDisplay').textContent = counts;
+
+                        } else {
+                            document.getElementById('countdownDisplay').textContent = "";
+                            displayElement.className = 'lcd-display';
+                        }
+                    } else if (data.color == "GREEN") {
+                        document.getElementById('greenLight').classList.add('active');
+                        if (counts <= 60 && counts > 0) {
+                            document.getElementById('countdownDisplay').textContent = counts;
+                            displayElement.className = 'lcd-display green';
+                        } else {
+                            document.getElementById('countdownDisplay').textContent = "";
+                            displayElement.className = 'lcd-display';
+                        }
+                    }
+
+                })
+                .catch(error => {
+                    console.error("Error fetching data:", error);
+                });
+        }, 1000);
+
+    }
+    
+    setInterval(changeLight, 2000);
+
+    changeLight();
+</script>
+
+</body>
+</html>
